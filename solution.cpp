@@ -84,8 +84,8 @@ void print_board(const vector<vector<int>>& board) {
     // TODO: Print the board in a 4x4 format
     // TODO: Use dots (.) for empty cells (value 0)
     // TODO: Use tabs (\t) to separate values for alignment
-    for (const auto& current_row : board) { // Renamed variable
-        for (int tile_value : current_row) { // Renamed variable
+    for (const auto& current_row : board) { 
+        for (int tile_value : current_row) {
             if (tile_value == 0) {
                 cout << ".\t";
             } else {
@@ -97,7 +97,7 @@ void print_board(const vector<vector<int>>& board) {
 }
 
 void spawn_tile(std::vector<std::vector<int>>& board) {
-    std::vector<std::pair<int,int>> empty_spots; // Renamed variable
+    std::vector<std::pair<int,int>> empty_spots; 
     for (int r = 0; r < 4; r++)
         for (int c = 0; c < 4; c++)
             if (board[r][c] == 0) empty_spots.emplace_back(r,c);
@@ -120,8 +120,8 @@ bool move_left(std::vector<std::vector<int>>& board) {
     //   2. Merge adjacent equal tiles
     //   3. Check if the row changed
     for (int i = 0; i < 4; ++i) {
-        vector<int> original_row = board[i]; // Renamed variable
-        vector<int> processed_row = merge_row(compress_row(original_row)); // Renamed variable
+        vector<int> original_row = board[i]; 
+        vector<int> processed_row = merge_row(compress_row(original_row)); 
         if (original_row != processed_row) {
             moved = true;
             board[i] = processed_row;
@@ -136,7 +136,7 @@ bool move_right(std::vector<std::vector<int>>& board) {
     // TODO: Similar to move_left but with reversal
     for (int i = 0; i < 4; ++i) {
         vector<int> original_row = board[i];
-        vector<int> temp_row = original_row; // Renamed variable
+        vector<int> temp_row = original_row; 
         reverse(temp_row.begin(), temp_row.end());
         
         temp_row = merge_row(compress_row(temp_row));
@@ -178,7 +178,6 @@ bool move_up(std::vector<std::vector<int>>& board) {
 
 // TODO: Implement move_down (columns with reversal)
 bool move_down(std::vector<std::vector<int>>& board) {
-    // This is a completely different implementation.
     // It transposes the board, moves right, and transposes back.
     bool moved = false;
     // TODO: Similar to move_up but with reversal
@@ -226,7 +225,7 @@ int main(){
         }
 
         cout<<"Move (w=up, a=left, s=down, d=right), u=undo, q=quit: ";
-        char move_char; // Renamed variable
+        char move_char;
         if (!(cin>>move_char)) break;
         if (move_char=='q') break;
 
@@ -247,8 +246,8 @@ int main(){
             continue;
         }
 
-        vector<vector<int>> board_before_move = board; // Renamed variable
-        bool was_moved=false; // Renamed variable
+        vector<vector<int>> board_before_move = board; 
+        bool was_moved=false; 
         if (move_char=='a') was_moved=move_left(board);
         else if (move_char=='d') was_moved=move_right(board);
         else if (move_char=='w') was_moved=move_up(board);
