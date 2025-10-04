@@ -35,7 +35,7 @@ std::vector<int> merge_row(std::vector<int> row) {
             row[i+1] = 0;
         }
     }
-    return compress_row(row); // Re-compress after merging
+    return compress_row(row);
 }
 
 void write_board_csv(const vector<vector<int>>& board, bool first, const string& stage) {
