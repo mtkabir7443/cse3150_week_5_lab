@@ -1,0 +1,11 @@
+# Compiled executable
+solution
+
+# Output files from the program/tests
+game_output.csv
+
+# Python cache folder
+__pycache__/
+
+# VS Code editor folder
+.vscode/
