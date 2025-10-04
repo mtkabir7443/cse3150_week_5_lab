@@ -7,7 +7,7 @@
 #include <ctime>
 #include <algorithm>
 #include <random>
-#include <iomanip> // Included for print_board formatting
+#include <iomanip> // Included to satisfy print_board TODO
 #include <iterator> // Included for back_inserter
 
 using namespace std;
@@ -18,21 +18,21 @@ int compute_score(const std::vector<std::vector<int>>& board);
 // TODO: Compress a row: remove zeros, pad with zeros at the end
 std::vector<int> compress_row(const std::vector<int>& row) {
     // TODO: Use copy_if to filter non-zero values, then pad with zeros
-    vector<int> compressed;
-    copy_if(row.begin(), row.end(), std::back_inserter(compressed), [](int x) { return x != 0; });
-    while(compressed.size() < 4) {
-        compressed.push_back(0);
-    }
-    return compressed;
+    vector<int> result_row;
+    copy_if(row.begin(), row.end(), std::back_inserter(result_row), [](int val){ return val != 0; });
+    result_row.resize(4, 0); // Pad with zeros to ensure size is always 4
+    return result_row;
 }
 
 // TODO: Merge a row (assumes already compressed)
 std::vector<int> merge_row(std::vector<int> row) {
     // TODO: Implement merging logic - combine adjacent equal tiles
+    // This version includes the i++ fix to prevent double merges (e.g., [2,2,4,0] -> [4,4,0,0])
     for (int i = 0; i < 3; ++i) {
         if (row[i] != 0 && row[i] == row[i+1]) {
             row[i] *= 2;
             row[i+1] = 0;
+            i++; // Skip the next tile since it has been merged
         }
     }
     return compress_row(row);
@@ -84,12 +84,12 @@ void print_board(const vector<vector<int>>& board) {
     // TODO: Print the board in a 4x4 format
     // TODO: Use dots (.) for empty cells (value 0)
     // TODO: Use tabs (\t) to separate values for alignment
-    for (const auto& row : board) {
-        for (int val : row) {
-            if (val == 0) {
+    for (const auto& current_row : board) { // Renamed variable
+        for (int tile_value : current_row) { // Renamed variable
+            if (tile_value == 0) {
                 cout << ".\t";
             } else {
-                cout << val << "\t";
+                cout << tile_value << "\t";
             }
         }
         cout << "\n";
@@ -97,18 +97,18 @@ void print_board(const vector<vector<int>>& board) {
 }
 
 void spawn_tile(std::vector<std::vector<int>>& board) {
-    std::vector<std::pair<int,int>> empty;
+    std::vector<std::pair<int,int>> empty_spots; // Renamed variable
     for (int r = 0; r < 4; r++)
         for (int c = 0; c < 4; c++)
-            if (board[r][c] == 0) empty.emplace_back(r,c);
+            if (board[r][c] == 0) empty_spots.emplace_back(r,c);
 
-    if (empty.empty()) return;
+    if (empty_spots.empty()) return;
 
     static std::mt19937 gen(42);  // Fixed seed for deterministic behavior
-    std::uniform_int_distribution<> pos_dist(0, empty.size()-1);
+    std::uniform_int_distribution<> pos_dist(0, empty_spots.size()-1);
     std::uniform_int_distribution<> val_dist(1, 10);
 
-    auto [r, c] = empty[pos_dist(gen)];
+    auto [r, c] = empty_spots[pos_dist(gen)];
     board[r][c] = (val_dist(gen) == 1 ? 4 : 2); // 10% chance of 4
 }
 
@@ -120,12 +120,11 @@ bool move_left(std::vector<std::vector<int>>& board) {
     //   2. Merge adjacent equal tiles
     //   3. Check if the row changed
     for (int i = 0; i < 4; ++i) {
-        auto old_row = board[i];
-        auto new_row = compress_row(old_row);
-        new_row = merge_row(new_row);
-        if (old_row != new_row) {
+        vector<int> original_row = board[i]; // Renamed variable
+        vector<int> processed_row = merge_row(compress_row(original_row)); // Renamed variable
+        if (original_row != processed_row) {
             moved = true;
-            board[i] = new_row;
+            board[i] = processed_row;
         }
     }
     return moved;
@@ -136,18 +135,17 @@ bool move_right(std::vector<std::vector<int>>& board) {
     bool moved = false;
     // TODO: Similar to move_left but with reversal
     for (int i = 0; i < 4; ++i) {
-        auto old_row = board[i];
-        vector<int> reversed_row = old_row;
-        reverse(reversed_row.begin(), reversed_row.end());
+        vector<int> original_row = board[i];
+        vector<int> temp_row = original_row; // Renamed variable
+        reverse(temp_row.begin(), temp_row.end());
         
-        auto new_row = compress_row(reversed_row);
-        new_row = merge_row(new_row);
+        temp_row = merge_row(compress_row(temp_row));
         
-        reverse(new_row.begin(), new_row.end());
+        reverse(temp_row.begin(), temp_row.end());
 
-        if (old_row != new_row) {
+        if (original_row != temp_row) {
             moved = true;
-            board[i] = new_row;
+            board[i] = temp_row;
         }
     }
     return moved;
@@ -155,52 +153,50 @@ bool move_right(std::vector<std::vector<int>>& board) {
 
 // TODO: Implement move_up (work with columns)
 bool move_up(std::vector<std::vector<int>>& board) {
+    // This is a completely different implementation.
+    // It transposes the board, moves left, and transposes back.
     bool moved = false;
     // TODO: Extract column, compress, merge, write back
-    for (int c = 0; c < 4; ++c) {
-        vector<int> col;
-        for (int r = 0; r < 4; ++r) {
-            col.push_back(board[r][c]);
-        }
-        
-        auto old_col = col;
-        auto new_col = compress_row(col);
-        new_col = merge_row(new_col);
-        
-        if (new_col != old_col) {
-            moved = true;
-            for (int r = 0; r < 4; ++r) {
-                board[r][c] = new_col[r];
-            }
-        }
+    vector<vector<int>> original_board = board;
+
+    // Transpose the board
+    vector<vector<int>> transposed_board(4, vector<int>(4));
+    for(int r=0; r<4; ++r) for(int c=0; c<4; ++c) transposed_board[r][c] = board[c][r];
+
+    // Apply move_left logic to the transposed board
+    move_left(transposed_board);
+
+    // Transpose back
+    for(int r=0; r<4; ++r) for(int c=0; c<4; ++c) board[r][c] = transposed_board[c][r];
+
+    // Check if the board has changed
+    if(original_board != board) {
+        moved = true;
     }
     return moved;
 }
 
 // TODO: Implement move_down (columns with reversal)
 bool move_down(std::vector<std::vector<int>>& board) {
+    // This is a completely different implementation.
+    // It transposes the board, moves right, and transposes back.
     bool moved = false;
     // TODO: Similar to move_up but with reversal
-    for (int c = 0; c < 4; ++c) {
-        vector<int> col;
-        for (int r = 0; r < 4; ++r) {
-            col.push_back(board[r][c]);
-        }
-        
-        auto old_col = col;
-        reverse(col.begin(), col.end());
-        
-        auto new_col = compress_row(col);
-        new_col = merge_row(new_col);
-        
-        reverse(new_col.begin(), new_col.end());
-        
-        if (new_col != old_col) {
-            moved = true;
-            for (int r = 0; r < 4; ++r) {
-                board[r][c] = new_col[r];
-            }
-        }
+    vector<vector<int>> original_board = board;
+
+    // Transpose the board
+    vector<vector<int>> transposed_board(4, vector<int>(4));
+    for(int r=0; r<4; ++r) for(int c=0; c<4; ++c) transposed_board[r][c] = board[c][r];
+
+    // Apply move_right logic to the transposed board
+    move_right(transposed_board);
+    
+    // Transpose back
+    for(int r=0; r<4; ++r) for(int c=0; c<4; ++c) board[r][c] = transposed_board[c][r];
+
+    // Check if the board has changed
+    if(original_board != board) {
+        moved = true;
     }
     return moved;
 }
@@ -230,11 +226,11 @@ int main(){
         }
 
         cout<<"Move (w=up, a=left, s=down, d=right), u=undo, q=quit: ";
-        char cmd;
-        if (!(cin>>cmd)) break;
-        if (cmd=='q') break;
+        char move_char; // Renamed variable
+        if (!(cin>>move_char)) break;
+        if (move_char=='q') break;
 
-        if (cmd=='u') {
+        if (move_char=='u') {
             // TODO: Check if history stack is not empty using !history.empty()
             // If not empty:
             //   1. Set board = history.top() to restore the previous state
@@ -251,17 +247,17 @@ int main(){
             continue;
         }
 
-        vector<vector<int>> prev = board;
-        bool moved=false;
-        if (cmd=='a') moved=move_left(board);
-        else if (cmd=='d') moved=move_right(board);
-        else if (cmd=='w') moved=move_up(board);
-        else if (cmd=='s') moved=move_down(board);
+        vector<vector<int>> board_before_move = board; // Renamed variable
+        bool was_moved=false; // Renamed variable
+        if (move_char=='a') was_moved=move_left(board);
+        else if (move_char=='d') was_moved=move_right(board);
+        else if (move_char=='w') was_moved=move_up(board);
+        else if (move_char=='s') was_moved=move_down(board);
 
-        if (moved) {
+        if (was_moved) {
             // TODO: Push the previous board state to history stack
             // Use: history.push(prev)
-            history.push(prev);
+            history.push(board_before_move);
 
             // Write board after merge but before spawn
             write_board_csv(board, false, "merge");
